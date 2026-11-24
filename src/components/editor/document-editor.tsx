@@ -4,12 +4,14 @@ import Link from "next/link";
 import { EditorContent, useEditor } from "@tiptap/react";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
-import { ArrowLeftIcon, CheckIcon, EyeIcon, Loader2Icon, Share2Icon, TriangleAlertIcon } from "lucide-react";
-import { Badge } from "@/components/ui/badge";
+import { CheckIcon, EyeIcon, Loader2Icon, Share2Icon, TriangleAlertIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
+import { LogoMark } from "@/components/brand";
+import { RoleBadge } from "@/components/role-badge";
 import { ShareDialog } from "@/components/share-dialog";
+import { stableStringify } from "@/lib/json";
 import { editorExtensions } from "@/lib/editor-extensions";
 import type { Access } from "@/lib/access";
 import { Toolbar } from "@/components/editor/toolbar";
@@ -84,15 +86,27 @@ export function DocumentEditor({ doc, role }: { doc: EditorDoc; role: Access }) 
     const seq = editSeq.current;
     setState("saving");
     try {
-      const res = await fetch(`/api/documents/${doc.id}`, {
+      const sent = editor.getJSON();
+      let res = await fetch(`/api/documents/${doc.id}`, {
         method: "PATCH",
         headers: JSON_HEADERS,
-        body: JSON.stringify({ content: editor.getJSON(), baseVersion: versionRef.current }),
+        body: JSON.stringify({ content: sent, baseVersion: versionRef.current }),
       });
-      const body = await res.json().catch(() => null);
+      let body = await res.json().catch(() => null);
       if (res.status === 409) {
-        setState("conflict");
-        return;
+        // A 409 can be our OWN earlier save whose response was lost (e.g. the connection dropped
+        // after the server applied it). If the stored document equals what we just sent, adopt its
+        // version instead of reporting a false conflict.
+        const latest = await fetch(`/api/documents/${doc.id}`, { cache: "no-store" })
+          .then((r) => (r.ok ? r.json() : null))
+          .catch(() => null);
+        if (latest && stableStringify(latest.document.content) === stableStringify(sent)) {
+          body = { document: { version: latest.document.version, updatedAt: latest.document.updatedAt } };
+          res = { ...res, ok: true, status: 200 } as Response;
+        } else {
+          setState("conflict");
+          return;
+        }
       }
       if (res.status === 403 || res.status === 404) {
         // The server re-checks access on every save. Stop saving and make the editor read-only.
@@ -223,38 +237,53 @@ export function DocumentEditor({ doc, role }: { doc: EditorDoc; role: Access }) 
   return (
     <div className="flex min-h-screen flex-col bg-muted/40">
       <header className="sticky top-0 z-10 border-b bg-background/95 backdrop-blur">
-        <div className="mx-auto flex w-full max-w-4xl items-center gap-3 px-4 py-2.5">
+        <div className="mx-auto flex w-full max-w-4xl flex-wrap items-center gap-x-3 gap-y-2 px-4 pt-2.5 sm:px-6">
           <Link
             href="/"
             onClick={onBackClick}
-            className="inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground"
+            aria-label="Back to documents"
+            title="Back to documents"
+            className="rounded-lg focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
           >
-            <ArrowLeftIcon className="size-4" /> Documents
+            <LogoMark />
           </Link>
-          <TitleField docId={doc.id} initial={doc.title} editable={isOwner} />
-          {canSave && (
-            <SaveIndicator state={state} savedAt={savedAt} errorMsg={errorMsg} onRetry={save} lostAccess={lostAccess} />
-          )}
-          {canSave && (
-            <Button size="sm" onClick={save} disabled={!editor || !canEdit || state === "saving" || state === "conflict"}>
-              {state === "saving" ? "Saving…" : "Save"}
-            </Button>
-          )}
-          {isOwner && (
-            <Button size="sm" variant="outline" onClick={() => setSharing(true)}>
-              <Share2Icon /> Share
-            </Button>
-          )}
+          <div className="order-last flex min-w-0 basis-full items-center gap-2 sm:order-none sm:basis-0 sm:flex-1">
+            <TitleField docId={doc.id} initial={doc.title} editable={isOwner} />
+          </div>
+          <div className="ml-auto flex items-center gap-2 sm:ml-0">
+            <RoleBadge role={role} />
+            {canSave && (
+              <SaveIndicator state={state} savedAt={savedAt} errorMsg={errorMsg} onRetry={save} lostAccess={lostAccess} />
+            )}
+            {canSave && (
+              <Button size="sm" onClick={save} disabled={!editor || !canEdit || state === "saving" || state === "conflict"}>
+                {state === "saving" ? "Saving…" : "Save"}
+              </Button>
+            )}
+            {isOwner && (
+              <Button size="sm" variant="outline" onClick={() => setSharing(true)}>
+                <Share2Icon /> Share
+              </Button>
+            )}
+          </div>
         </div>
-        <div className="mx-auto w-full max-w-4xl px-4 pb-2">
-          <Toolbar editor={editor} disabled={!canEdit} />
+        <div className="mx-auto w-full max-w-4xl px-4 py-2 sm:px-6">
+          <div className="rounded-lg border bg-background px-1.5 py-1 shadow-xs">
+            <Toolbar editor={editor} disabled={!canEdit} />
+          </div>
           {sharing && (
-            <ShareDialog docId={doc.id} docTitle={doc.title} ownerId={doc.ownerId} onClose={() => setSharing(false)} />
+            <ShareDialog
+              docId={doc.id}
+              docTitle={doc.title}
+              ownerId={doc.ownerId}
+              ownerName={doc.ownerName}
+              onClose={() => setSharing(false)}
+            />
           )}
         </div>
       </header>
 
-      <main className="mx-auto w-full max-w-4xl flex-1 px-4 py-6">
+      <main className="mx-auto w-full max-w-4xl flex-1 px-4 py-6 sm:px-6">
         {lostAccess && (
           <div
             role="alert"
@@ -264,7 +293,7 @@ export function DocumentEditor({ doc, role }: { doc: EditorDoc; role: Access }) 
             <p className="min-w-0 flex-1">
               {lostAccess === "revoked" ? (
                 <>
-                  <strong>This document is no longer shared with you.</strong> It is shown read-only.
+                  <strong>This document is no longer available to you</strong> (it was unshared or deleted). It is shown read-only.
                   {canSave && state !== "saved" ? " Your latest edits were not saved." : ""}
                 </>
               ) : (
@@ -298,18 +327,17 @@ export function DocumentEditor({ doc, role }: { doc: EditorDoc; role: Access }) 
         {!canSave && (
           <div
             role="status"
-            className="mb-4 flex items-center gap-2 rounded-md border bg-background px-4 py-2.5 text-sm text-muted-foreground"
+            className="mb-4 flex items-center gap-2 rounded-lg border bg-background px-4 py-2.5 text-sm text-muted-foreground"
           >
-            <EyeIcon className="size-4" />
+            <EyeIcon className="size-4 shrink-0" aria-hidden />
             <span>
-              You have <strong>view-only</strong> access to this document. Shared by {doc.ownerName}.
+              You have <strong className="font-medium text-foreground">view-only</strong> access to this document. Shared
+              by {doc.ownerName}.
             </span>
           </div>
         )}
         {role === "editor" && (
-          <div className="mb-4 flex items-center gap-2 text-sm text-muted-foreground">
-            <Badge variant="secondary">Shared · Can edit</Badge> Owned by {doc.ownerName}
-          </div>
+          <p className="mb-4 text-sm text-muted-foreground">Shared with you by {doc.ownerName}. You can edit the content.</p>
         )}
         {state === "conflict" && (
           <div
@@ -329,7 +357,7 @@ export function DocumentEditor({ doc, role }: { doc: EditorDoc; role: Access }) 
             </Button>
           </div>
         )}
-        <div className="doc-editor min-h-[60vh] rounded-lg border bg-background px-6 py-8 shadow-sm sm:px-12">
+        <div className="doc-editor rounded-xl border bg-background px-6 py-10 shadow-sm sm:px-16 sm:py-14">
           {editor ? <EditorContent editor={editor} /> : <Skeleton className="h-64 w-full" aria-label="Loading editor" />}
         </div>
       </main>
@@ -351,35 +379,44 @@ function SaveIndicator({
   lostAccess: LostAccess;
 }) {
   const time = savedAt?.toLocaleTimeString(undefined, { hour: "numeric", minute: "2-digit" });
+  const pill = "inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-xs font-medium whitespace-nowrap";
   if (lostAccess) {
     return (
-      <div aria-live="polite" className="whitespace-nowrap text-sm text-destructive" data-save-state="denied">
-        Not saved: access changed
+      <div aria-live="polite" data-save-state="denied" className={`${pill} border-red-200 bg-red-50 text-red-800`}>
+        <TriangleAlertIcon className="size-3.5" aria-hidden /> Not saved: access changed
       </div>
     );
   }
   return (
-    <div aria-live="polite" className="flex items-center gap-1.5 whitespace-nowrap text-sm" data-save-state={state}>
+    <div aria-live="polite" data-save-state={state}>
       {state === "saved" && (
-        <span className="inline-flex items-center gap-1 text-muted-foreground">
-          <CheckIcon className="size-4 text-emerald-600" /> {time ? `Saved at ${time}` : "Saved"}
+        <span className={`${pill} text-muted-foreground`}>
+          <CheckIcon className="size-3.5 text-emerald-600" aria-hidden /> {time ? `Saved at ${time}` : "Saved"}
         </span>
       )}
-      {state === "dirty" && <span className="text-amber-700 dark:text-amber-400">Unsaved changes</span>}
+      {state === "dirty" && (
+        <span className={`${pill} border-amber-300 bg-amber-50 text-amber-900`}>
+          <span className="size-1.5 rounded-full bg-amber-600" aria-hidden /> Unsaved changes
+        </span>
+      )}
       {state === "saving" && (
-        <span className="inline-flex items-center gap-1 text-muted-foreground">
-          <Loader2Icon className="size-4 animate-spin" /> Saving…
+        <span className={`${pill} text-muted-foreground`}>
+          <Loader2Icon className="size-3.5 animate-spin" aria-hidden /> Saving…
         </span>
       )}
       {state === "error" && (
-        <span className="inline-flex items-center gap-2 text-destructive">
-          Save failed{errorMsg ? ` (${errorMsg})` : ""}
+        <span className={`${pill} border-red-200 bg-red-50 text-red-800`}>
+          <TriangleAlertIcon className="size-3.5" aria-hidden /> Save failed{errorMsg ? ` (${errorMsg})` : ""}
           <button className="underline underline-offset-2" onClick={onRetry}>
             Retry
           </button>
         </span>
       )}
-      {state === "conflict" && <span className="text-destructive">Not saved: conflict</span>}
+      {state === "conflict" && (
+        <span className={`${pill} border-red-200 bg-red-50 text-red-800`}>
+          <TriangleAlertIcon className="size-3.5" aria-hidden /> Not saved: conflict
+        </span>
+      )}
     </div>
   );
 }

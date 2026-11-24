@@ -21,6 +21,7 @@ _TODO_
 - `PATCH /api/documents/:id` is either a rename (`{title}`, owner only) or a content save (`{content, baseVersion}`, owner or editor). Permission is decided by which field is sent, before the body is validated.
 - **Atomic optimistic concurrency:** `UPDATE documents SET content=…, version=version+1 WHERE id=… AND version=$baseVersion RETURNING …`. No row returned means 404 (document gone) or 409 (someone saved first). There is no read-then-write window.
 - The client keeps the last known `version`, sends it with every save, and adopts the version returned. Explicit Save button (also Ctrl/Cmd+S) plus autosave 1.5 s after the last edit; one request in flight at a time, with edits made during a save triggering a follow-up save. States: Saved / Unsaved changes / Saving… / Save failed (Retry) / Conflict. On conflict autosave stops, the user is told their latest edits were not saved, and can copy their text and reload.
+- **Lost-response recovery:** a 409 can be the client's own earlier save whose response never arrived. On 409 the client fetches the document; if the stored content equals (key-order-insensitive) what it just sent, it adopts the server version instead of showing a false conflict.
 - No network request is made on page unload. When there are unsaved changes the browser's leave-page prompt is shown (and a confirm on the in-app Back link).
 
 ## Database access
@@ -37,6 +38,9 @@ The client (`src/components/import-text.tsx`) pre-checks extension/size/empty fo
 - **Access is re-checked on every request**, so revoking or downgrading takes effect immediately even for an editor that is already open: the next save returns 403 (downgraded) or 404 (revoked) and the content is not written. The open editor reacts by turning read-only, stopping autosave and showing a banner with "Copy my text"; non-owners also re-check access when the tab regains focus (at most every 5 s) so they see it without typing. A viewer who is promoted needs to reload to get the editor.
 - Deleting a document cascades to its shares.
 
+## Interface
+Restrained identity: an indigo primary on cool neutrals (tokens in `src/app/globals.css`), one logo mark, deterministic initials avatars (`avatar.tsx`, white text on -700 shades for contrast), and a single `RoleBadge` (Owner / Can edit / View only) used on the dashboard, in the editor header and in the share dialog. Dashboard rows are whole-row links with the actions menu layered above; empty states explain what to do next. The editor header wraps on narrow screens, the save status is a pill (Saved / Unsaved changes / Saving… / Save failed + Retry / Conflict / Access changed), and `prefers-reduced-motion` is respected. No new dependencies were added.
+
 ## Authentication (demo only, NOT production authentication)
 Login picks one of three seeded users; there are no passwords. A random 32-byte token is stored in `sessions`; the cookie (`httpOnly`, `sameSite=lax`, `secure` in production, 7-day expiry) carries it. Every API call resolves the user from the session row. Real authentication would replace only `src/lib/session.ts` and the login route.
 
@@ -48,7 +52,7 @@ Login picks one of three seeded users; there are no passwords. A random 32-byte 
 - Concurrent editing is not merged: last saver wins only if they edited the latest version; otherwise they get a conflict and must reload (their text can be copied first). No real-time collaboration.
 - The access check and the versioned UPDATE are separate statements; a share revoked in the few milliseconds between them would not stop that one write. Acceptable for this scope.
 - API-level tests use an in-memory data layer, so they do not exercise real SQL. The atomic version guard was verified separately against the real database (see AI_WORKFLOW.md).
-- The editor UI itself has no automated browser test.
+- The editor UI itself has no automated browser test, and the lost-response recovery in the client is not covered by an automated test (only its comparison helper is).
 
 ## Future improvements
 _TODO_

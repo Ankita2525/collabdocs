@@ -3,6 +3,8 @@
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
+import { Loader2Icon } from "lucide-react";
+import { Avatar } from "@/components/avatar";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Button } from "@/components/ui/button";
 
@@ -50,7 +52,7 @@ export function LoginPicker() {
 
   if (loadError) {
     return (
-      <div className="mt-8 rounded-md border p-4 text-sm">
+      <div className="mt-4 rounded-lg border border-destructive/40 p-4 text-sm">
         <p className="text-destructive">Could not load demo users.</p>
         <Button className="mt-3" size="sm" variant="outline" onClick={load}>
           Retry
@@ -61,28 +63,40 @@ export function LoginPicker() {
 
   if (!users) {
     return (
-      <div className="mt-8 grid gap-3 sm:grid-cols-3">
+      <div className="mt-4 space-y-2" aria-busy="true" aria-label="Loading demo users">
         {[0, 1, 2].map((i) => (
-          <Skeleton key={i} className="h-24" />
+          <Skeleton key={i} className="h-[68px]" />
         ))}
       </div>
     );
   }
 
   return (
-    <div className="mt-8 grid gap-3 sm:grid-cols-3">
+    <ul className="mt-4 space-y-2">
       {users.map((u) => (
-        <button
-          key={u.id}
-          onClick={() => login(u.id)}
-          disabled={pending !== null}
-          className="rounded-lg border bg-card p-4 text-left transition hover:border-foreground/40 hover:shadow-sm focus-visible:outline-2 disabled:opacity-60"
-        >
-          <div className="text-base font-medium">{u.name}</div>
-          <div className="mt-1 text-xs text-muted-foreground">{u.email}</div>
-          {pending === u.id && <div className="mt-2 text-xs">Signing in…</div>}
-        </button>
+        <li key={u.id}>
+          <button
+            onClick={() => login(u.id)}
+            disabled={pending !== null}
+            className="flex w-full items-center gap-3 rounded-lg border bg-background p-3 text-left transition-colors hover:border-primary/40 hover:bg-accent focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring disabled:opacity-60"
+          >
+            <Avatar name={u.name} id={u.id} size="lg" />
+            <span className="min-w-0 flex-1">
+              <span className="block truncate font-medium">{u.name}</span>
+              <span className="block truncate text-sm text-muted-foreground">{u.email}</span>
+            </span>
+            <span className="text-sm text-muted-foreground">
+              {pending === u.id ? (
+                <span className="inline-flex items-center gap-1.5">
+                  <Loader2Icon className="size-4 animate-spin" aria-hidden /> Signing in…
+                </span>
+              ) : (
+                "Sign in"
+              )}
+            </span>
+          </button>
+        </li>
       ))}
-    </div>
+    </ul>
   );
 }
