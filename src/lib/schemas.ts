@@ -12,9 +12,25 @@ export const createDocumentSchema = z.object({
   title: titleSchema.optional(),
 });
 
+/**
+ * PATCH is either a rename ({title}) or a content save ({content, baseVersion}), never both:
+ * the two need different permissions. `content` is validated separately against the editor schema.
+ */
 export const patchDocumentSchema = z
-  .object({ title: titleSchema.optional() })
-  .refine((v) => v.title !== undefined, { message: "Nothing to update" });
+  .object({
+    title: titleSchema.optional(),
+    content: z.unknown().optional(),
+    baseVersion: z.number().int().positive().optional(),
+  })
+  .superRefine((v, ctx) => {
+    const hasTitle = v.title !== undefined;
+    const hasContent = v.content !== undefined;
+    if (hasTitle === hasContent) {
+      ctx.addIssue({ code: "custom", message: "Send either a title or content to update" });
+    } else if (hasContent && v.baseVersion === undefined) {
+      ctx.addIssue({ code: "custom", message: "baseVersion is required when saving content" });
+    }
+  });
 
 export const DEFAULT_TITLE = "Untitled document";
 

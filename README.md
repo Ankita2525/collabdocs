@@ -2,7 +2,7 @@
 
 A lightweight collaborative document editor inspired by Google Docs. Built as a time-boxed assessment.
 
-> **Status: in progress (M2: document list, create, rename, delete; editor, sharing and import are not built yet).** Sections marked _TODO_ are filled in as milestones are completed.
+> **Status: in progress (M3: rich-text editor with autosave and conflict detection). Sharing UI and .txt import are not built yet.** Sections marked _TODO_ are filled in as milestones are completed.
 
 ## Stack
 Next.js (App Router, TypeScript), Tailwind CSS + shadcn/ui, Tiptap, Next.js Route Handlers, Supabase PostgreSQL (via the `postgres` driver), Zod, Vitest, Vercel.
@@ -31,7 +31,7 @@ Login is a user picker with no passwords. **This is demo authentication, not pro
 | Command | What it does |
 |---|---|
 | `npm run dev` | Start dev server |
-| `npm test` | Run Vitest |
+| `npm test` | Run Vitest (unit tests + API-level authorization tests against an in-memory data layer; no database needed) |
 | `npm run lint` | ESLint |
 | `npm run typecheck` | TypeScript check |
 | `npm run build` | Production build |

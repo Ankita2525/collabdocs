@@ -33,7 +33,19 @@ describe("patchDocumentSchema", () => {
     expect(patchDocumentSchema.safeParse({}).success).toBe(false);
   });
   it("accepts a valid title", () => {
-    expect(patchDocumentSchema.parse({ title: " New " })).toEqual({ title: "New" });
+    expect(patchDocumentSchema.parse({ title: " New " }).title).toBe("New");
+  });
+  it("requires baseVersion with content", () => {
+    expect(patchDocumentSchema.safeParse({ content: { type: "doc" } }).success).toBe(false);
+    expect(patchDocumentSchema.safeParse({ content: { type: "doc" }, baseVersion: 1 }).success).toBe(true);
+  });
+  it("rejects bad baseVersion values", () => {
+    for (const baseVersion of [0, -1, 1.5, "1", null]) {
+      expect(patchDocumentSchema.safeParse({ content: { type: "doc" }, baseVersion }).success).toBe(false);
+    }
+  });
+  it("rejects title and content together", () => {
+    expect(patchDocumentSchema.safeParse({ title: "x", content: { type: "doc" }, baseVersion: 1 }).success).toBe(false);
   });
 });
 

@@ -23,9 +23,15 @@ export async function loadDocumentFor(
   return { doc, access };
 }
 
+const MAX_BODY_CHARS = 1_200_000;
+
 export async function readJson(request: Request): Promise<unknown> {
+  const declared = Number(request.headers.get("content-length"));
+  if (Number.isFinite(declared) && declared > MAX_BODY_CHARS * 2) throw errors.tooLarge("Request is too large");
+  const text = await request.text();
+  if (text.length > MAX_BODY_CHARS) throw errors.tooLarge("Request is too large");
   try {
-    return await request.json();
+    return JSON.parse(text);
   } catch {
     throw errors.badRequest("Request body must be valid JSON");
   }

@@ -1,4 +1,5 @@
 import { randomBytes } from "node:crypto";
+import type postgres from "postgres";
 import { getDb } from "@/lib/db";
 import type { ShareRole } from "@/lib/access";
 
@@ -36,6 +37,11 @@ export type Repo = {
   getDocument(id: string, userId: string): Promise<DocumentRecord | null>;
   renameDocument(id: string, title: string): Promise<DocSummary | null>;
   deleteDocument(id: string): Promise<boolean>;
+  /**
+   * Atomic compare-and-set on `version`: one UPDATE ... WHERE id AND version = baseVersion.
+   * Returns null when no row matched (document gone OR version is stale; caller tells them apart).
+   */
+  updateContent(id: string, content: unknown, baseVersion: number): Promise<{ version: number; updatedAt: string } | null>;
 };
 
 type SummaryRow = {
@@ -122,6 +128,15 @@ export const sqlRepo: Repo = {
       select d.id, d.title, d.version, d.updated_at, d.owner_id, u.name as owner_name
       from d join users u on u.id = d.owner_id`;
     return rows[0] ? toSummary(rows[0]) : null;
+  },
+  async updateContent(id, content, baseVersion) {
+    const sql = getDb();
+    const rows = await sql<{ version: number; updated_at: Date }[]>`
+      update documents
+      set content = ${sql.json(content as postgres.JSONValue)}, version = version + 1, updated_at = now()
+      where id = ${id} and version = ${baseVersion}
+      returning version, updated_at`;
+    return rows[0] ? { version: rows[0].version, updatedAt: rows[0].updated_at.toISOString() } : null;
   },
   async deleteDocument(id) {
     const rows = await getDb()`delete from documents where id = ${id} returning id`;
