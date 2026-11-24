@@ -3,13 +3,22 @@
 Records how AI was actually used. Entries are added only for things that really happened.
 
 ## Tools used
-- **Claude Code (Claude Sonnet 5.5), Claude desktop app, Code tab** — the only AI tool used. It planned (in plan mode), wrote the code, tests, verification harnesses and documentation, and ran commands in the candidate's project folder.
-- Tools it ran: `npm`/Next.js/Vitest/ESLint/TypeScript, `curl` and small Python/Node scripts against the real Supabase database and the Vercel deployment, `git` and the `gh` CLI (commit, push, read commit status), the CommonMark reference parser `commonmark` (installed only in a scratch directory, not in the project) for validating Markdown export.
-- The built-in browser was tried once for a visual check and hung, so it was not used for any verification; all browser verification is by the candidate.
-- Not used: any other AI assistant, generated images, or external AI APIs inside the application.
+Two AI tools were used in this assessment. **This file was written by Claude Code, which can only document its own work and has no visibility into the candidate's ChatGPT conversations.** Statements about ChatGPT below are therefore *candidate-reported* and limited to what the candidate has said; nothing is claimed about what ChatGPT produced.
+
+**1. Claude Code (Claude Sonnet 5.5), Claude desktop app, Code tab: documented in detail in this file.** It planned (in plan mode), wrote the application code, tests, verification harnesses and the documentation, and ran commands in the candidate's project folder.
+- Tools Claude Code ran: `npm`/Next.js/Vitest/ESLint/TypeScript, `curl` and small Python/Node scripts against the real Supabase database and the Vercel deployment, `git` and the `gh` CLI (commit, push, read commit status), and the CommonMark reference parser `commonmark` (installed only in a scratch directory, not in the project) for validating Markdown export.
+- The built-in browser was tried once for a visual check and hung, so it was not used for any verification.
+- Claude Code did not use any other AI service, and no AI API is called from the application itself.
+
+**2. ChatGPT: candidate-reported use; details to be completed by the candidate.**
+The candidate has stated that ChatGPT was also used. Claude Code did not take part in those interactions and cannot verify them. Please replace the placeholders below with the actual use before submission (what it was asked, what was adopted, what was rejected or corrected, and how it was checked):
+- *Purpose / stage of use:* **[candidate to complete]**
+- *What was adopted into the project (if anything):* **[candidate to complete]**
+- *What was rejected, corrected or verified, and how:* **[candidate to complete]**
+- Note for accuracy: the planning prompt that started the Claude Code session (the requirements, stack and constraints) was pasted into the session by the candidate; Claude Code does not know how that text was authored.
 
 ## Meaningful contributions
-**Division of work.** The candidate set the requirements and constraints, revised the plan, approved every milestone and every push, created and configured the Supabase, GitHub and Vercel accounts and projects, and performed (and reports) the browser verification. Claude wrote essentially all code, tests, harnesses and documents. Nothing here claims browser verification that the candidate has not reported.
+**Division of work (Claude Code and the candidate; ChatGPT use is candidate-reported in the section above).** The candidate set the requirements and constraints, revised the plan, approved every milestone and every push, created and configured the Supabase, GitHub and Vercel accounts and projects, and performed (and reports) the browser verification. Claude wrote essentially all code, tests, harnesses and documents. Nothing here claims browser verification that the candidate has not reported.
 
 **What Claude contributed, concretely:**
 - *Plan and architecture:* the four-hour plan with explicit simplifications (no ORM, no Supabase Auth or RLS-based rules, server-side sessions, content as Tiptap JSON), later revised on the candidate's instructions (see below).
@@ -42,8 +51,9 @@ Records how AI was actually used. Entries are added only for things that really 
 ## Verification performed
 
 **Who verified what (kept distinct on purpose).**
-- *Automated, run by Claude:* Vitest unit and API-level authorization tests (112 tests, in-memory data layer); lint, typecheck and production build; curl-based harnesses against the real Supabase database through `next dev`; the same curl harnesses against the production deployment. These exercise APIs and server-rendered HTML only.
-- *Candidate-performed, in Chrome:* the M2 dashboard flows listed below (the only browser verification recorded so far). The candidate has said they will perform the final visual and functional verification of the editor, sharing, import and polished UI in Chrome; **no result of that is recorded here until it is reported.**
+- *Automated, executed by Claude Code (an AI tool):* Vitest unit and API-level authorization tests (112 tests, in-memory data layer); lint, typecheck and production build; curl-based harnesses against the real Supabase database through `next dev`; the same curl harnesses against the production deployment. These exercise APIs and server-rendered HTML only.
+- *Candidate-performed, in Chrome (human):* the M2 dashboard flows listed below (the only browser verification recorded so far). The candidate has said they will perform the final visual and functional verification of the editor, sharing, import and polished UI in Chrome; **no result of that is recorded here until it is reported.**
+- *ChatGPT:* no test or verification results from ChatGPT are recorded in this file.
 - *Not verified by anyone yet:* the export feature in a browser (the actual `.md` download and its file name, Print / Save as PDF preview and page breaks, export of unsaved edits, the disabled state after revocation, menu keyboard use), the visual result of the UI polish, keyboard/focus behaviour, narrow-screen layout, the in-browser autosave/conflict/lost-access flows, and upload-progress intermediate states.
 
 - M3 (local, real Supabase DB, `next dev`; harness script run by Claude): `npm test` 55 passed, lint, typecheck, `npm run build` clean. Content API results, all PASS: new doc version 1 with default content; rich save (h1, h2, bold/italic/underline incl. combined, bullet and numbered lists) 200 → version 2; read-back JSON identical to what was saved; stale `baseVersion` 409 and content unchanged; rejected with 400: codeBlock, heading level 5, link mark, unknown `script` node, non-object content; version/content unchanged after the rejects; 1.3 MB body 413; **race: 8 concurrent saves with the same `baseVersion` → exactly one 200 and seven 409, version advanced exactly once (real DB)**; with temporary share rows: viewer content save 403, viewer + invalid content 403 (authorization precedes validation), editor rename 403, editor content save 200; owner sees editor's version; `/docs/<id>` SSR 200 for owner, viewer and editor and includes the title. Test documents deleted afterwards (cleanup count 0).
