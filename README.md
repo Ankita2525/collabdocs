@@ -59,7 +59,7 @@ Login is a user picker with no passwords. **This is demo authentication, not pro
 | `npm run dev` | Start dev server |
 | `npm test` | Run Vitest (unit tests + API-level authorization tests against an in-memory data layer; no database needed) |
 | `npm run lint` | ESLint |
-| `npm run typecheck` | TypeScript check |
+| `npm run typecheck` | Generates Next's route types, then runs the TypeScript check (works on a fresh checkout) |
 | `npm run build` | Production build |
 
 ## Manual test script (about 10 minutes, in a browser)
