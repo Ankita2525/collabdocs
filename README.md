@@ -2,7 +2,9 @@
 
 A lightweight collaborative document editor inspired by Google Docs. Built as a time-boxed assessment.
 
-> **Status: all mandatory features are implemented and verified by API; UI polish done; final walkthrough and submission files remain.** Sections marked _TODO_ are filled in as milestones are completed.
+**Live demo:** https://collabdocs-blue.vercel.app (demo authentication: pick a seeded user; no passwords).
+
+> **Status:** feature-complete and frozen: create/rename/edit/save/reopen, rich text, `.txt` import, owner/shared documents with viewer/editor roles, validation and server-side authorization, automated tests, public deployment, and document export (Markdown, Print / Save as PDF). The walkthrough video URL is in `WALKTHROUGH.txt` once recorded. What has and has not been verified, and by whom, is listed in `SUBMISSION.md` and `AI_WORKFLOW.md`.
 
 ## Stack
 Next.js (App Router, TypeScript), Tailwind CSS + shadcn/ui, Tiptap, Next.js Route Handlers, Supabase PostgreSQL (via the `postgres` driver), Zod, Vitest, Vercel.
@@ -60,5 +62,16 @@ Login is a user picker with no passwords. **This is demo authentication, not pro
 | `npm run typecheck` | TypeScript check |
 | `npm run build` | Production build |
 
-## Manual test script
-_TODO (V milestone)._
+## Manual test script (about 10 minutes, in a browser)
+Use the live demo or `npm run dev`. Sign in by choosing a demo user.
+1. **Login.** Open `/login`: the "Demo authentication — not for production" notice is shown. Sign in as **Alice**.
+2. **Create and format.** Click **New document**, open it, type some text and use the toolbar (bold, italic, underline, headings, bulleted and numbered lists). The status pill goes *Unsaved changes → Saving… → Saved*. Reload the page: content and formatting are still there.
+3. **Rename.** Edit the title in the editor header (Enter or click away), and use **Rename** in a document's `…` menu on the dashboard.
+4. **Import.** Click **Import .txt** and choose a UTF-8 text file with a few blank-line-separated paragraphs (and some emoji). A new document titled after the file opens. Then try a `.pdf` or an empty `.txt`: a clear error is shown and nothing is created.
+5. **Share.** In the editor click **Share**, add **Bob** as *Can view*. Sign out and sign in as **Bob**: the document is under **Shared with me** with a *View only* badge, the editor is read-only, and **Export** still works.
+6. **Change and revoke access.** As Alice, change Bob to *Can edit*; as Bob, edit and save. As Alice, remove Bob while Bob has the document open: on Bob's next save attempt (or when his tab regains focus) a banner says the document is no longer available and the editor becomes read-only.
+7. **Conflict.** Open the same document in two windows as Alice and Carol (share it with Carol as *Can edit*), edit in both: the later save shows a "changed elsewhere" banner instead of overwriting.
+8. **Export.** In the editor click **Export → Download Markdown (.md)** (make an unsaved edit first: it is included) and **Export → Print / Save as PDF** (choose "Save as PDF" as the destination).
+
+## Automated tests
+`npm test` runs the whole suite (about 160 tests, no database needed): permission rules, request validation, Tiptap content validation, `.txt` conversion, Markdown serialisation, and API-level authorization tests that call the real route handlers against an in-memory data layer (viewer/editor/stranger access, revocation, stale versions, invalid content, import rejections). Also run `npm run lint`, `npm run typecheck` and `npm run build`.

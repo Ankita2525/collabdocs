@@ -1,9 +1,20 @@
 # Architecture
 
-> **Status: skeleton (M0).** Filled in as milestones complete. Only describes what is actually built.
+> Describes what is actually built (feature-frozen). Limits and unverified areas are stated explicitly.
 
 ## Overview
-_TODO_
+One Next.js (App Router, TypeScript) application deployed on Vercel: React pages and Route Handlers in the same project. Supabase is used only as managed PostgreSQL, reached from the server with the `postgres` driver; the browser never talks to the database and no database credential is exposed to it (`DATABASE_URL` is server-only). There is no ORM, no Supabase Auth and no row-level-security policy: all authorization lives in one place in server code (see Access rules), which is simpler to reason about and to test.
+
+```
+Browser (React, Tiptap editor)
+   │  fetch JSON / multipart upload
+   ▼
+Route Handlers  src/app/api/**      session → loadDocumentFor (getAccess + can) → validate (Zod, Tiptap schema) → repo
+   │
+   ▼
+repo.ts (all SQL) ──► Supabase PostgreSQL (pooled connection, port 6543)
+```
+Key files: `src/lib/access.ts` (permissions), `src/lib/documents.ts` (load + authorize), `src/lib/repo.ts` (SQL and the atomic versioned update), `src/lib/content.ts` + `editor-extensions.ts` (content schema shared by editor and server), `src/lib/import-text.ts` (`.txt` import), `src/lib/markdown.ts` (export), `src/components/editor/*` (editor, toolbar, export), `src/components/dashboard.tsx`, `share-dialog.tsx`, `db/schema.sql` + `db/seed.sql`, `tests/*` (API-level tests with an in-memory repo).
 
 ## Data model (implemented in `db/schema.sql`)
 - `users(id, email unique, name)`
@@ -63,4 +74,4 @@ Login picks one of three seeded users; there are no passwords. A random 32-byte 
 - The editor UI itself has no automated browser test, and the lost-response recovery in the client is not covered by an automated test (only its comparison helper is).
 
 ## Future improvements
-_TODO_
+Not built, in rough priority order: real authentication (passwords/OAuth, email invitations); real-time collaboration (CRDT/OT over WebSockets) instead of detect-and-reload conflicts; version history and restore; comments; server-generated PDF and DOCX/Markdown/PDF import; sharing by link and by email for people without an account; per-document share notifications; a browser-level end-to-end test suite (Playwright) covering the editor, sharing dialogs, export and print; rate limiting and audit logging; autosave backoff and offline support; automatic role-change refresh for promoted viewers; accessibility audit with a contrast and screen-reader pass.
