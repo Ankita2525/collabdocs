@@ -1,5 +1,6 @@
 import { redirect } from "next/navigation";
 import { getCurrentUser } from "@/lib/session";
+import { Dashboard } from "@/components/dashboard";
 import { LogoutButton } from "@/components/logout-button";
 
 export const dynamic = "force-dynamic";
@@ -17,7 +18,7 @@ export default async function Home() {
           <LogoutButton />
         </div>
       </header>
-      <p className="mt-8 text-muted-foreground">Your documents will appear here.</p>
+      <Dashboard />
     </div>
   );
 }

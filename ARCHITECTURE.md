@@ -16,7 +16,7 @@ _TODO_
 Login picks one of three seeded users; there are no passwords. A random 32-byte token is stored in `sessions`; the cookie (`httpOnly`, `sameSite=lax`, `secure` in production, 7-day expiry) carries it. Every API call resolves the user from the session row. Real authentication would replace only `src/lib/session.ts` and the login route.
 
 ## Access rules
-`src/lib/access.ts` is the only place permissions are decided: `getAccess(ownerId, userId, shareRole)` returns `owner | editor | viewer | null`, and `can(access, action)` maps that to read / editContent / rename / delete / share. Unit-tested in `src/lib/access.test.ts`. Document routes (M2+) will call it on every operation; no access answers 404.
+`src/lib/access.ts` is the only place permissions are decided: `getAccess(ownerId, userId, shareRole)` returns `owner | editor | viewer | null`, and `can(access, action)` maps that to read / editContent / rename / delete / share. Unit-tested in `src/lib/access.test.ts`. Every document route goes through `loadDocumentFor` (`src/lib/documents.ts`): load the document with the caller's share role, compute access, check the action. A malformed id or no access gives 404 (existence is not leaked); a visible document with insufficient rights gives 403. Rename and delete are owner-only.
 
 ## Trade-offs and limitations
 _TODO_

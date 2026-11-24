@@ -2,7 +2,7 @@
 
 A lightweight collaborative document editor inspired by Google Docs. Built as a time-boxed assessment.
 
-> **Status: in progress (M1 done: database, sessions, login).** Sections marked _TODO_ are filled in as milestones are completed.
+> **Status: in progress (M2: document list, create, rename, delete; editor, sharing and import are not built yet).** Sections marked _TODO_ are filled in as milestones are completed.
 
 ## Stack
 Next.js (App Router, TypeScript), Tailwind CSS + shadcn/ui, Tiptap, Next.js Route Handlers, Supabase PostgreSQL (via the `postgres` driver), Zod, Vitest, Vercel.
