@@ -38,6 +38,7 @@ export const shareSchema = z.object({
 });
 
 export const DEFAULT_TITLE = "Untitled document";
+export const DEFAULT_IMPORT_TITLE = "Imported document";
 
 /** Turns a Zod failure into one readable sentence for the API error message. */
 export function firstIssue(error: z.ZodError): string {

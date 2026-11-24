@@ -47,13 +47,13 @@ export function createFakeRepo(users: User[]) {
         }),
       };
     },
-    async createDocument(ownerId, title) {
+    async createDocument(ownerId, title, content) {
       const now = new Date();
       const d: Doc = {
         id: `00000000-0000-4000-8000-${String(++counter).padStart(12, "0")}`,
         ownerId,
         title,
-        content: { type: "doc", content: [{ type: "paragraph" }] },
+        content: content === undefined ? { type: "doc", content: [{ type: "paragraph" }] } : structuredClone(content),
         version: 1,
         createdAt: now,
         updatedAt: now,

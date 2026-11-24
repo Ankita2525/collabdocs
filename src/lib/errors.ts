@@ -15,6 +15,7 @@ export const errors = {
   notFound: (message = "Not found") => new ApiError(404, "not_found", message),
   conflict: (message = "The document was changed elsewhere") => new ApiError(409, "conflict", message),
   tooLarge: (message = "Payload too large") => new ApiError(413, "too_large", message),
+  unsupportedType: (message = "Unsupported file type") => new ApiError(415, "unsupported_type", message),
 };
 
 export function errorResponse(err: unknown): Response {

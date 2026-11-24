@@ -23,7 +23,7 @@ export async function loadDocumentFor(
   return { doc, access };
 }
 
-const MAX_BODY_CHARS = 1_200_000;
+const MAX_BODY_CHARS = 2_500_000;
 
 export async function readJson(request: Request): Promise<unknown> {
   const declared = Number(request.headers.get("content-length"));

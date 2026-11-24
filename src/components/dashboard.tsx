@@ -17,6 +17,7 @@ import {
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
+import { IMPORT_HELP, ImportButton, ImportStatus, useTextImport } from "@/components/import-text";
 import { ShareDialog } from "@/components/share-dialog";
 import type { DocSummary, DocumentList } from "@/lib/repo";
 
@@ -38,6 +39,7 @@ export function Dashboard() {
   const [renaming, setRenaming] = useState<DocSummary | null>(null);
   const [deleting, setDeleting] = useState<DocSummary | null>(null);
   const [sharing, setSharing] = useState<DocSummary | null>(null);
+  const importer = useTextImport();
 
   const load = useCallback(async () => {
     setLoadError(null);
@@ -74,10 +76,16 @@ export function Dashboard() {
     <div className="mt-8">
       <div className="flex items-center justify-between">
         <h2 className="text-lg font-semibold">My documents</h2>
-        <Button onClick={createDocument} disabled={creating}>
-          <PlusIcon /> {creating ? "Creating…" : "New document"}
-        </Button>
+        <div className="flex items-center gap-2">
+          <input {...importer.inputProps} />
+          <ImportButton busy={importer.busy} onClick={importer.openPicker} />
+          <Button onClick={createDocument} disabled={creating || importer.busy}>
+            <PlusIcon /> {creating ? "Creating…" : "New document"}
+          </Button>
+        </div>
       </div>
+      <p className="mt-1 text-right text-xs text-muted-foreground">{IMPORT_HELP}</p>
+      <ImportStatus state={importer.state} dismiss={importer.dismiss} />
 
       {loadError ? (
         <div className="mt-4 rounded-lg border border-destructive/40 p-4 text-sm">

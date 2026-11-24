@@ -15,7 +15,7 @@ _TODO_
 ## Editor and content
 - Tiptap (ProseMirror) editor; supported formatting: bold, italic, underline, headings 1–3, bulleted and numbered lists, hard breaks, undo/redo. Content is stored as Tiptap JSON in `documents.content` (jsonb), never as HTML.
 - `src/lib/editor-extensions.ts` is the single list of allowed nodes/marks, used by the browser editor and by the server validator, so they cannot drift apart.
-- **Server-side validation** (`src/lib/content.ts`): envelope check, 1 MB cap, then `getSchema(extensions).nodeFromJSON(json).check()` (ProseMirror, Node, no DOM) which rejects unknown node/mark types, bad nesting and empty text nodes; then explicit attribute checks (heading level 1–3, ordered-list `start`/`type`) because the ProseMirror schema does not validate attribute values. The normalized document (unknown attributes dropped) is what gets stored.
+- **Server-side validation** (`src/lib/content.ts`): envelope check, 2 MB cap, then `getSchema(extensions).nodeFromJSON(json).check()` (ProseMirror, Node, no DOM) which rejects unknown node/mark types, bad nesting and empty text nodes; then explicit attribute checks (heading level 1–3, ordered-list `start`/`type`) because the ProseMirror schema does not validate attribute values. The normalized document (unknown attributes dropped) is what gets stored.
 
 ## Saving and conflict detection
 - `PATCH /api/documents/:id` is either a rename (`{title}`, owner only) or a content save (`{content, baseVersion}`, owner or editor). Permission is decided by which field is sent, before the body is validated.
@@ -25,6 +25,10 @@ _TODO_
 
 ## Database access
 `src/lib/db.ts` uses the Supabase **transaction-mode pooler** (port 6543). Required settings: `prepare:false` and **`max_pipeline:1`**. Without the latter, concurrent queries on a connection stall indefinitely through the pooler (reproduced; see AI_WORKFLOW.md).
+
+## Import
+`POST /api/documents/import` (multipart field `file`) → `prepareImport` in `src/lib/import-text.ts`: extension must be `.txt`, MIME type must be empty, `text/plain` or `application/octet-stream`, size 1..1,000,000 bytes (also rejected early from `Content-Length`), strict UTF-8 decode (NUL bytes or invalid UTF-8 → rejected as binary/non-UTF-8), non-blank content. `parsePlainText` builds the Tiptap document (blank line = new paragraph, single newline = `hardBreak`, CRLF/CR normalised, BOM and control characters removed). The result goes through the same `validateContent` as editor saves, then `createDocument(session user, title, content)`: the owner is always the session user and the title comes from the filename (basename only, extension stripped, whitespace collapsed, max 200 chars, fallback "Imported document"). Limits live in `src/lib/import-limits.ts` so the browser bundle does not pull in server code. The editor document cap was raised to 2 MB so that any valid 1 MB import fits.
+The client (`src/components/import-text.tsx`) pre-checks extension/size/empty for instant feedback, uploads with `XMLHttpRequest` to show real progress (fetch cannot), and navigates to the new document on success.
 
 ## Sharing
 - Owner-only management through `GET/POST /api/documents/:id/shares` and `DELETE /api/documents/:id/shares/:userId` (all use `loadDocumentFor(..., "share")`: strangers get 404, viewers/editors get 403). `POST` is an upsert, so changing a role and creating a share are the same call; it rejects sharing with yourself (400), unknown users (404) and invalid roles (400).

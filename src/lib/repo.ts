@@ -33,7 +33,7 @@ export type Repo = {
   getUserBySession(token: string): Promise<User | null>;
   deleteSession(token: string): Promise<void>;
   listDocuments(userId: string): Promise<DocumentList>;
-  createDocument(ownerId: string, title: string): Promise<DocSummary>;
+  createDocument(ownerId: string, title: string, content?: unknown): Promise<DocSummary>;
   /** Loads a document plus the given user's share role in one query. No permission check here. */
   getDocument(id: string, userId: string): Promise<DocumentRecord | null>;
   renameDocument(id: string, title: string): Promise<DocSummary | null>;
@@ -104,9 +104,13 @@ export const sqlRepo: Repo = {
       where s.user_id = ${userId} order by d.updated_at desc`;
     return { owned: owned.map((r) => ({ ...toSummary(r), shareCount: r.share_count })), shared: shared.map((r) => ({ ...toSummary(r), role: r.role })) };
   },
-  async createDocument(ownerId, title) {
-    const rows = await getDb()<SummaryRow[]>`
-      with d as (insert into documents (owner_id, title) values (${ownerId}, ${title}) returning *)
+  async createDocument(ownerId, title, content) {
+    const sql = getDb();
+    const rows = await sql<SummaryRow[]>`
+      with d as (
+        insert into documents (owner_id, title, content)
+        values (${ownerId}, ${title}, coalesce(${content === undefined ? null : sql.json(content as postgres.JSONValue)}::jsonb, '{"type":"doc","content":[{"type":"paragraph"}]}'::jsonb))
+        returning *)
       select d.id, d.title, d.version, d.updated_at, d.owner_id, u.name as owner_name
       from d join users u on u.id = d.owner_id`;
     return toSummary(rows[0]);

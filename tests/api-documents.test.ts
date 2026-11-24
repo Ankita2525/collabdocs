@@ -194,7 +194,7 @@ describe("content validation", () => {
   });
   it("rejects malformed JSON (400) and oversized bodies (413)", async () => {
     expect((await PATCH(req("PATCH", "{oops"), ctx(docId))).status).toBe(400);
-    const huge = { type: "doc", content: [{ type: "paragraph", content: [{ type: "text", text: "a".repeat(1_300_000) }] }] };
+    const huge = { type: "doc", content: [{ type: "paragraph", content: [{ type: "text", text: "a".repeat(2_600_000) }] }] };
     expect((await patch({ content: huge, baseVersion: 1 })).status).toBe(413);
   });
   it("answers 404 for malformed ids", async () => {

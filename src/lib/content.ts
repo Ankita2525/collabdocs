@@ -2,7 +2,8 @@ import { getSchema } from "@tiptap/core";
 import { z } from "zod";
 import { HEADING_LEVELS, editorExtensions } from "@/lib/editor-extensions";
 
-export const MAX_CONTENT_BYTES = 1_000_000;
+// Allows a 1 MB .txt import (plus JSON overhead) to always fit as one document.
+export const MAX_CONTENT_BYTES = 2_000_000;
 
 export type TiptapDoc = { type: "doc"; content?: unknown[] };
 
