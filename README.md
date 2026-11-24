@@ -1,36 +1,40 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# CollabDocs
 
-## Getting Started
+A lightweight collaborative document editor inspired by Google Docs. Built as a time-boxed assessment.
 
-First, run the development server:
+> **Status: in progress (M1 done: database, sessions, login).** Sections marked _TODO_ are filled in as milestones are completed.
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
-```
+## Stack
+Next.js (App Router, TypeScript), Tailwind CSS + shadcn/ui, Tiptap, Next.js Route Handlers, Supabase PostgreSQL (via the `postgres` driver), Zod, Vitest, Vercel.
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+## Local setup
+1. `npm install`
+2. Create a free Supabase project. Copy `.env.example` to `.env.local` and set `DATABASE_URL` to the **pooled** connection string (Project Settings → Database → Connection pooling, port 6543). Use the plain password in the URL (URL-encode special characters; no `[brackets]`, no line breaks). Keep it server-side; never commit it.
+3. Create the tables and demo users: `node --env-file=.env.local scripts/apply-sql.mjs db/schema.sql db/seed.sql` (or paste both files into the Supabase SQL editor). Both are idempotent.
+4. `npm run dev` and open http://localhost:3000
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## Environment variables
+| Name | Purpose |
+|---|---|
+| `DATABASE_URL` | Supabase pooled Postgres connection string. Server-side only. |
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+## Demo users
+| Name | Email |
+|---|---|
+| Alice Johnson | alice@collabdocs.demo |
+| Bob Smith | bob@collabdocs.demo |
+| Carol Diaz | carol@collabdocs.demo |
 
-## Learn More
+Login is a user picker with no passwords. **This is demo authentication, not production authentication.**
 
-To learn more about Next.js, take a look at the following resources:
+## Commands
+| Command | What it does |
+|---|---|
+| `npm run dev` | Start dev server |
+| `npm test` | Run Vitest |
+| `npm run lint` | ESLint |
+| `npm run typecheck` | TypeScript check |
+| `npm run build` | Production build |
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
-
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+## Manual test script
+_TODO (V milestone)._
