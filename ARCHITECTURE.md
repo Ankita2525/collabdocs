@@ -26,6 +26,13 @@ _TODO_
 ## Database access
 `src/lib/db.ts` uses the Supabase **transaction-mode pooler** (port 6543). Required settings: `prepare:false` and **`max_pipeline:1`**. Without the latter, concurrent queries on a connection stall indefinitely through the pooler (reproduced; see AI_WORKFLOW.md).
 
+## Sharing
+- Owner-only management through `GET/POST /api/documents/:id/shares` and `DELETE /api/documents/:id/shares/:userId` (all use `loadDocumentFor(..., "share")`: strangers get 404, viewers/editors get 403). `POST` is an upsert, so changing a role and creating a share are the same call; it rejects sharing with yourself (400), unknown users (404) and invalid roles (400).
+- Share targets are the seeded demo users, chosen from a list in the share dialog (owner, and users who already have access, are excluded from the add list; roles of existing entries are changed inline).
+- The dashboard shows an **Owner** badge plus "Shared with N" on owned documents, and a "Shared · Can edit / View only" badge with "Shared by <owner>" on shared ones.
+- **Access is re-checked on every request**, so revoking or downgrading takes effect immediately even for an editor that is already open: the next save returns 403 (downgraded) or 404 (revoked) and the content is not written. The open editor reacts by turning read-only, stopping autosave and showing a banner with "Copy my text"; non-owners also re-check access when the tab regains focus (at most every 5 s) so they see it without typing. A viewer who is promoted needs to reload to get the editor.
+- Deleting a document cascades to its shares.
+
 ## Authentication (demo only, NOT production authentication)
 Login picks one of three seeded users; there are no passwords. A random 32-byte token is stored in `sessions`; the cookie (`httpOnly`, `sameSite=lax`, `secure` in production, 7-day expiry) carries it. Every API call resolves the user from the session row. Real authentication would replace only `src/lib/session.ts` and the login route.
 

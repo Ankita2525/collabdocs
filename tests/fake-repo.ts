@@ -1,5 +1,5 @@
 import type { ShareRole } from "@/lib/access";
-import type { DocSummary, DocumentList, DocumentRecord, Repo, User } from "@/lib/repo";
+import type { DocSummary, DocumentList, DocumentRecord, Repo, ShareEntry, User } from "@/lib/repo";
 
 type Doc = { id: string; ownerId: string; title: string; content: unknown; version: number; createdAt: Date; updatedAt: Date };
 
@@ -35,7 +35,12 @@ export function createFakeRepo(users: User[]) {
     async listDocuments(userId): Promise<DocumentList> {
       const all = [...docs.values()];
       return {
-        owned: all.filter((d) => d.ownerId === userId).map(summary),
+        owned: all
+          .filter((d) => d.ownerId === userId)
+          .map((d) => ({
+            ...summary(d),
+            shareCount: [...shares.keys()].filter((k) => k.startsWith(`${d.id}:`)).length,
+          })),
         shared: all.flatMap((d) => {
           const role = shares.get(`${d.id}:${userId}`);
           return role ? [{ ...summary(d), role }] : [];
@@ -72,6 +77,20 @@ export function createFakeRepo(users: User[]) {
       d.title = title;
       d.updatedAt = new Date();
       return summary(d);
+    },
+    async listShares(documentId): Promise<ShareEntry[]> {
+      return [...shares.entries()]
+        .filter(([k]) => k.startsWith(`${documentId}:`))
+        .map(([k, role]) => {
+          const u = users.find((x) => x.id === k.split(":")[1])!;
+          return { userId: u.id, name: u.name, email: u.email, role };
+        });
+    },
+    async upsertShare(documentId, userId, role) {
+      shares.set(`${documentId}:${userId}`, role);
+    },
+    async deleteShare(documentId, userId) {
+      return shares.delete(`${documentId}:${userId}`);
     },
     async updateContent(id, content, baseVersion) {
       const d = docs.get(id);

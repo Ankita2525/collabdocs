@@ -20,8 +20,9 @@ export type DocumentRecord = DocSummary & {
   /** The current user's share role, if they are not the owner. */
   shareRole: ShareRole | null;
 };
+export type ShareEntry = { userId: string; name: string; email: string; role: ShareRole };
 export type DocumentList = {
-  owned: DocSummary[];
+  owned: (DocSummary & { shareCount: number })[];
   shared: (DocSummary & { role: ShareRole })[];
 };
 
@@ -37,6 +38,10 @@ export type Repo = {
   getDocument(id: string, userId: string): Promise<DocumentRecord | null>;
   renameDocument(id: string, title: string): Promise<DocSummary | null>;
   deleteDocument(id: string): Promise<boolean>;
+  listShares(documentId: string): Promise<ShareEntry[]>;
+  /** Creates the share or changes its role. */
+  upsertShare(documentId: string, userId: string, role: ShareRole): Promise<void>;
+  deleteShare(documentId: string, userId: string): Promise<boolean>;
   /**
    * Atomic compare-and-set on `version`: one UPDATE ... WHERE id AND version = baseVersion.
    * Returns null when no row matched (document gone OR version is stale; caller tells them apart).
@@ -86,8 +91,9 @@ export const sqlRepo: Repo = {
   },
   async listDocuments(userId) {
     const sql = getDb();
-    const owned = await sql<SummaryRow[]>`
-      select d.id, d.title, d.version, d.updated_at, d.owner_id, u.name as owner_name
+    const owned = await sql<(SummaryRow & { share_count: number })[]>`
+      select d.id, d.title, d.version, d.updated_at, d.owner_id, u.name as owner_name,
+             (select count(*)::int from document_shares s where s.document_id = d.id) as share_count
       from documents d join users u on u.id = d.owner_id
       where d.owner_id = ${userId} order by d.updated_at desc`;
     const shared = await sql<(SummaryRow & { role: ShareRole })[]>`
@@ -96,7 +102,7 @@ export const sqlRepo: Repo = {
       join documents d on d.id = s.document_id
       join users u on u.id = d.owner_id
       where s.user_id = ${userId} order by d.updated_at desc`;
-    return { owned: owned.map(toSummary), shared: shared.map((r) => ({ ...toSummary(r), role: r.role })) };
+    return { owned: owned.map((r) => ({ ...toSummary(r), shareCount: r.share_count })), shared: shared.map((r) => ({ ...toSummary(r), role: r.role })) };
   },
   async createDocument(ownerId, title) {
     const rows = await getDb()<SummaryRow[]>`
@@ -128,6 +134,23 @@ export const sqlRepo: Repo = {
       select d.id, d.title, d.version, d.updated_at, d.owner_id, u.name as owner_name
       from d join users u on u.id = d.owner_id`;
     return rows[0] ? toSummary(rows[0]) : null;
+  },
+  async listShares(documentId) {
+    const rows = await getDb()<{ user_id: string; name: string; email: string; role: ShareRole }[]>`
+      select s.user_id, u.name, u.email, s.role
+      from document_shares s join users u on u.id = s.user_id
+      where s.document_id = ${documentId} order by u.name`;
+    return rows.map((r) => ({ userId: r.user_id, name: r.name, email: r.email, role: r.role }));
+  },
+  async upsertShare(documentId, userId, role) {
+    await getDb()`
+      insert into document_shares (document_id, user_id, role) values (${documentId}, ${userId}, ${role})
+      on conflict (document_id, user_id) do update set role = excluded.role`;
+  },
+  async deleteShare(documentId, userId) {
+    const rows = await getDb()`
+      delete from document_shares where document_id = ${documentId} and user_id = ${userId} returning user_id`;
+    return rows.length > 0;
   },
   async updateContent(id, content, baseVersion) {
     const sql = getDb();

@@ -22,7 +22,7 @@ export default async function DocPage({ params }: { params: Promise<{ id: string
     <DocumentEditor
       key={doc.id}
       role={access}
-      doc={{ id: doc.id, title: doc.title, version: doc.version, content: doc.content, ownerName: doc.ownerName }}
+      doc={{ id: doc.id, title: doc.title, version: doc.version, content: doc.content, ownerId: doc.ownerId, ownerName: doc.ownerName }}
     />
   );
 }

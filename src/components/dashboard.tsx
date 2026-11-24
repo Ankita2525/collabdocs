@@ -17,6 +17,7 @@ import {
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
+import { ShareDialog } from "@/components/share-dialog";
 import type { DocSummary, DocumentList } from "@/lib/repo";
 
 async function api<T>(url: string, init?: RequestInit): Promise<T> {
@@ -36,6 +37,7 @@ export function Dashboard() {
   const [creating, setCreating] = useState(false);
   const [renaming, setRenaming] = useState<DocSummary | null>(null);
   const [deleting, setDeleting] = useState<DocSummary | null>(null);
+  const [sharing, setSharing] = useState<DocSummary | null>(null);
 
   const load = useCallback(async () => {
     setLoadError(null);
@@ -96,7 +98,12 @@ export function Dashboard() {
                 <DocRow
                   key={d.id}
                   doc={d}
-                  badge={<Badge>Owner</Badge>}
+                  badge={
+                    <>
+                      <Badge>Owner</Badge>
+                      {d.shareCount > 0 && <Badge variant="outline">Shared with {d.shareCount}</Badge>}
+                    </>
+                  }
                   menu={
                     <DropdownMenu>
                       <DropdownMenuTrigger
@@ -107,6 +114,7 @@ export function Dashboard() {
                       </DropdownMenuTrigger>
                       <DropdownMenuContent align="end">
                         <DropdownMenuItem onClick={() => setRenaming(d)}>Rename</DropdownMenuItem>
+                        <DropdownMenuItem onClick={() => setSharing(d)}>Share…</DropdownMenuItem>
                         <DropdownMenuItem onClick={() => setDeleting(d)}>Delete</DropdownMenuItem>
                       </DropdownMenuContent>
                     </DropdownMenu>
@@ -134,6 +142,18 @@ export function Dashboard() {
         </>
       )}
 
+      {sharing && (
+        <ShareDialog
+          key={sharing.id}
+          docId={sharing.id}
+          docTitle={sharing.title}
+          ownerId={sharing.ownerId}
+          onClose={() => {
+            setSharing(null);
+            void load();
+          }}
+        />
+      )}
       {renaming && (
         <RenameDialog
           key={renaming.id}

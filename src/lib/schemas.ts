@@ -32,6 +32,11 @@ export const patchDocumentSchema = z
     }
   });
 
+export const shareSchema = z.object({
+  userId: z.uuid({ error: "Choose a user to share with" }),
+  role: z.enum(["viewer", "editor"], { error: "Role must be viewer or editor" }),
+});
+
 export const DEFAULT_TITLE = "Untitled document";
 
 /** Turns a Zod failure into one readable sentence for the API error message. */
