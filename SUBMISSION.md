@@ -1,18 +1,19 @@
 # Submission
 
 **Project:** CollabDocs, a lightweight collaborative document editor (time-boxed assessment).
-**Status:** feature-complete and frozen. The walkthrough video URL is a placeholder until the candidate provides it (see `WALKTHROUGH.txt`).
+**Status:** feature-complete and frozen. Walkthrough video (Loom): https://www.loom.com/share/35b8409a36244309af83f7ded739761d (also in `WALKTHROUGH.txt`).
 
 ## Deliverable inventory
 | Item | Where |
 |---|---|
 | Live deployment (public) | https://collabdocs-blue.vercel.app |
 | Source code (GitHub) | https://github.com/Ankita2525/collabdocs (**private repository**: the reviewer must be given access, or use the source archive below) |
-| Source archive | `submission-package/collabdocs-<commit>.zip`, produced with `git archive` from the final commit (tracked files only: no `node_modules`, build output, environment files or credentials) |
-| Walkthrough video | **placeholder**: see `WALKTHROUGH.txt` (URL not yet provided) |
+| Source archive | `collabdocs-<commit>.zip` in the submission folder, where `<commit>` is the Git commit it was built from with `git archive` (tracked files only: no `node_modules`, build output, environment files or credentials) |
+| Checksums | `SHA256SUMS.txt` in the submission folder (SHA-256 of every other file in the folder; verify with `shasum -a 256 -c SHA256SUMS.txt`) |
+| Walkthrough video | https://www.loom.com/share/35b8409a36244309af83f7ded739761d (Loom; also in `WALKTHROUGH.txt`) |
 | README.md | setup, environment, demo users, commands, import and export behaviour, manual test script, limitations |
 | ARCHITECTURE.md | architecture, data model, access rules, saving/conflict design, import, sharing, export, trade-offs, future work |
-| AI_WORKFLOW.md | AI tool used, contributions, changed/rejected suggestions, decision log, verification results |
+| AI_WORKFLOW.md | AI tools used (Claude Code, and ChatGPT as described by the candidate), contributions, changed/rejected suggestions, decision log, verification results |
 | `.env.example` | environment variable names only (`DATABASE_URL`), no values |
 | Automated tests | `npm test` (about 160 tests) |
 

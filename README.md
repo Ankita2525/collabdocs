@@ -4,7 +4,7 @@ A lightweight collaborative document editor inspired by Google Docs. Built as a 
 
 **Live demo:** https://collabdocs-blue.vercel.app (demo authentication: pick a seeded user; no passwords).
 
-> **Status:** feature-complete and frozen: create/rename/edit/save/reopen, rich text, `.txt` import, owner/shared documents with viewer/editor roles, validation and server-side authorization, automated tests, public deployment, and document export (Markdown, Print / Save as PDF). The walkthrough video URL is in `WALKTHROUGH.txt` once recorded. What has and has not been verified, and by whom, is listed in `SUBMISSION.md` and `AI_WORKFLOW.md`.
+> **Status:** feature-complete and frozen: create/rename/edit/save/reopen, rich text, `.txt` import, owner/shared documents with viewer/editor roles, validation and server-side authorization, automated tests, public deployment, and document export (Markdown, Print / Save as PDF). The recorded walkthrough video is linked in `WALKTHROUGH.txt`. What has and has not been verified, and by whom, is listed in `SUBMISSION.md` and `AI_WORKFLOW.md`.
 
 ## Stack
 Next.js (App Router, TypeScript), Tailwind CSS + shadcn/ui, Tiptap, Next.js Route Handlers, Supabase PostgreSQL (via the `postgres` driver), Zod, Vitest, Vercel.
