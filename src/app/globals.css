@@ -159,3 +159,39 @@
     transition-duration: 0.01ms !important;
   }
 }
+
+/* Print / Save as PDF: only the title and the formatted document are printed. The app chrome (header, toolbar,
+   sharing controls, buttons, banners, toasts) is hidden with Tailwind's print: variant in the components and below. */
+.print-title { display: none; }
+@media print {
+  @page { margin: 2cm; }
+  html, body { background: #fff !important; }
+  [data-sonner-toaster] { display: none !important; }
+  .doc-editor {
+    border: 0 !important;
+    border-radius: 0 !important;
+    box-shadow: none !important;
+    background: transparent !important;
+    padding: 0 !important;
+  }
+  .doc-editor .print-title {
+    display: block;
+    font-size: 22pt;
+    font-weight: 700;
+    line-height: 1.2;
+    letter-spacing: -0.01em;
+    margin: 0 0 1.1em;
+    padding-bottom: 0.4em;
+    border-bottom: 1px solid #999;
+    break-after: avoid;
+    overflow-wrap: anywhere;
+  }
+  .doc-editor .ProseMirror { min-height: 0; font-size: 11pt; line-height: 1.55; color: #000; }
+  .doc-editor .ProseMirror h1 { font-size: 18pt; }
+  .doc-editor .ProseMirror h2 { font-size: 15pt; }
+  .doc-editor .ProseMirror h3 { font-size: 12.5pt; }
+  .doc-editor .ProseMirror :is(h1, h2, h3) { break-after: avoid-page; break-inside: avoid; }
+  .doc-editor .ProseMirror :is(p, li) { orphans: 3; widows: 3; }
+  .doc-editor .ProseMirror li { break-inside: avoid; }
+  .doc-editor .ProseMirror ::selection { background: transparent; }
+}

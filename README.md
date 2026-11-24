@@ -20,10 +20,19 @@ On the dashboard, **Import .txt** creates a new document from a plain-text file.
 - **Result:** a new document owned by the signed-in user, titled from the filename without `.txt` (e.g. `Trip notes.txt` becomes "Trip notes"), opened in the editor. A progress bar is shown while uploading.
 - A 1 MB file made of a very large number of short lines can expand beyond the 2 MB document limit and is then rejected as having too many lines.
 
+## Exporting a document
+The editor header has an **Export** menu (available to owners, editors and viewers, since all of them can read the document). It is disabled if the editor detects that your access was removed.
+- **Download Markdown (.md)** saves the document as a Markdown file. It exports what is on screen, including edits that are not saved yet. Headings, paragraphs, bold, italic, bulleted and numbered lists (including nested lists) and line breaks are preserved; Unicode is kept and Markdown special characters are escaped so text stays literal. The file name is derived from the title with unsafe characters removed (for example `My plan.md`).
+  - **Underline** has no Markdown syntax, so it is written as inline HTML `<u>…</u>` (most Markdown viewers render it).
+  - A line break is written as a backslash at the end of the line (CommonMark). Leading indentation is written as `&nbsp;`. Empty paragraphs are dropped, and the title is used for the file name rather than added to the body.
+  - Where `*` emphasis would not be valid Markdown (mid-word next to punctuation, overlapping bold and italic) the span is written as inline HTML `<strong>` / `<em>` instead.
+- **Print / Save as PDF** opens the browser's native print dialog with a print stylesheet: only the title and the formatted document are printed (navigation, toolbar, buttons, banners and sharing controls are hidden), with 2 cm margins and headings kept with the text that follows them. Choose "Save as PDF" as the destination to get a PDF. **This is not a direct PDF download**: the file name, paper size and exact page breaks come from your browser's print settings.
+
 ## Known limitations
 - **Demo authentication only**: a user picker with no passwords. Not suitable for production.
 - **No real-time collaboration.** Two people editing the same document at once is detected, not merged: the second save is rejected with a conflict message (their text can be copied) and they reload.
 - **Import size rules.** A `.txt` file may be up to 1 MB, but it is stored as a structured document with a hard limit of **2 MB after conversion**. Every line break inside a paragraph becomes a separate node, so an unusually structured file (for example about a million lines with one or two characters each) can pass the 1 MB check yet exceed 2 MB once converted. It is then rejected with "too many lines to import as one document". Ordinary text of up to 1 MB always fits. Only `.txt` is supported.
+- Export is Markdown or browser print only; there is no server-generated PDF, and Markdown files cannot be re-imported (import accepts `.txt` only). Print layout and page breaks vary between browsers.
 - A viewer who is promoted to editor needs to reload the page to start editing; a downgraded or revoked user is told on their next save attempt or when the tab regains focus.
 - The share dialog heading shows the title the page was opened with, not a title renamed after opening.
 - If a session expires (7 days) while editing, a save fails with "You must be signed in"; copy your text, sign in again and reload.

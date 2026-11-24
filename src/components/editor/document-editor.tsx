@@ -10,6 +10,7 @@ import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
 import { LogoMark } from "@/components/brand";
 import { RoleBadge } from "@/components/role-badge";
+import { ExportMenu } from "@/components/editor/export-menu";
 import { ShareDialog } from "@/components/share-dialog";
 import { stableStringify } from "@/lib/json";
 import { editorExtensions } from "@/lib/editor-extensions";
@@ -37,6 +38,7 @@ const RECHECK_MIN_MS = 5000;
 export function DocumentEditor({ doc, role }: { doc: EditorDoc; role: Access }) {
   const [lostAccess, setLostAccess] = useState<LostAccess>(null);
   const [sharing, setSharing] = useState(false);
+  const [title, setTitle] = useState(doc.title); // current title (after renames), used by Export / Print / Share
   const canSave = role !== "viewer"; // may this user edit at all, as of page load
   const canEdit = canSave && !lostAccess; // ...and still can, as far as the server has told us
   const isOwner = role === "owner";
@@ -235,8 +237,8 @@ export function DocumentEditor({ doc, role }: { doc: EditorDoc; role: Access }) 
   }
 
   return (
-    <div className="flex min-h-screen flex-col bg-muted/40">
-      <header className="sticky top-0 z-10 border-b bg-background/95 backdrop-blur">
+    <div className="flex min-h-screen flex-col bg-muted/40 print:min-h-0 print:bg-white">
+      <header className="sticky top-0 z-10 border-b bg-background/95 backdrop-blur print:hidden">
         <div className="mx-auto flex w-full max-w-4xl flex-wrap items-center gap-x-3 gap-y-2 px-4 pt-2.5 sm:px-6">
           <Link
             href="/"
@@ -248,7 +250,7 @@ export function DocumentEditor({ doc, role }: { doc: EditorDoc; role: Access }) 
             <LogoMark />
           </Link>
           <div className="order-last flex min-w-0 basis-full items-center gap-2 sm:order-none sm:basis-0 sm:flex-1">
-            <TitleField docId={doc.id} initial={doc.title} editable={isOwner} />
+            <TitleField docId={doc.id} initial={doc.title} editable={isOwner} onCommitted={setTitle} />
           </div>
           <div className="ml-auto flex items-center gap-2 sm:ml-0">
             <RoleBadge role={role} />
@@ -260,6 +262,7 @@ export function DocumentEditor({ doc, role }: { doc: EditorDoc; role: Access }) 
                 {state === "saving" ? "Saving…" : "Save"}
               </Button>
             )}
+            <ExportMenu editor={editor} title={title} disabled={lostAccess === "revoked"} />
             {isOwner && (
               <Button size="sm" variant="outline" onClick={() => setSharing(true)}>
                 <Share2Icon /> Share
@@ -274,7 +277,7 @@ export function DocumentEditor({ doc, role }: { doc: EditorDoc; role: Access }) 
           {sharing && (
             <ShareDialog
               docId={doc.id}
-              docTitle={doc.title}
+              docTitle={title}
               ownerId={doc.ownerId}
               ownerName={doc.ownerName}
               onClose={() => setSharing(false)}
@@ -283,11 +286,11 @@ export function DocumentEditor({ doc, role }: { doc: EditorDoc; role: Access }) 
         </div>
       </header>
 
-      <main className="mx-auto w-full max-w-4xl flex-1 px-4 py-6 sm:px-6">
+      <main className="mx-auto w-full max-w-4xl flex-1 px-4 py-6 sm:px-6 print:max-w-none print:p-0">
         {lostAccess && (
           <div
             role="alert"
-            className="mb-4 flex flex-wrap items-center gap-3 rounded-md border border-destructive/40 bg-destructive/5 px-4 py-3 text-sm"
+            className="mb-4 flex flex-wrap items-center gap-3 rounded-md border border-destructive/40 bg-destructive/5 px-4 py-3 text-sm print:hidden"
           >
             <TriangleAlertIcon className="size-4 shrink-0 text-destructive" />
             <p className="min-w-0 flex-1">
@@ -327,7 +330,7 @@ export function DocumentEditor({ doc, role }: { doc: EditorDoc; role: Access }) 
         {!canSave && (
           <div
             role="status"
-            className="mb-4 flex items-center gap-2 rounded-lg border bg-background px-4 py-2.5 text-sm text-muted-foreground"
+            className="mb-4 flex items-center gap-2 rounded-lg border bg-background px-4 py-2.5 text-sm text-muted-foreground print:hidden"
           >
             <EyeIcon className="size-4 shrink-0" aria-hidden />
             <span>
@@ -337,12 +340,12 @@ export function DocumentEditor({ doc, role }: { doc: EditorDoc; role: Access }) 
           </div>
         )}
         {role === "editor" && (
-          <p className="mb-4 text-sm text-muted-foreground">Shared with you by {doc.ownerName}. You can edit the content.</p>
+          <p className="mb-4 text-sm text-muted-foreground print:hidden">Shared with you by {doc.ownerName}. You can edit the content.</p>
         )}
         {state === "conflict" && (
           <div
             role="alert"
-            className="mb-4 flex flex-wrap items-center gap-3 rounded-md border border-destructive/40 bg-destructive/5 px-4 py-3 text-sm"
+            className="mb-4 flex flex-wrap items-center gap-3 rounded-md border border-destructive/40 bg-destructive/5 px-4 py-3 text-sm print:hidden"
           >
             <TriangleAlertIcon className="size-4 shrink-0 text-destructive" />
             <p className="min-w-0 flex-1">
@@ -358,6 +361,7 @@ export function DocumentEditor({ doc, role }: { doc: EditorDoc; role: Access }) 
           </div>
         )}
         <div className="doc-editor rounded-xl border bg-background px-6 py-10 shadow-sm sm:px-16 sm:py-14">
+          <h1 className="print-title">{title}</h1>
           {editor ? <EditorContent editor={editor} /> : <Skeleton className="h-64 w-full" aria-label="Loading editor" />}
         </div>
       </main>
@@ -421,7 +425,17 @@ function SaveIndicator({
   );
 }
 
-function TitleField({ docId, initial, editable }: { docId: string; initial: string; editable: boolean }) {
+function TitleField({
+  docId,
+  initial,
+  editable,
+  onCommitted,
+}: {
+  docId: string;
+  initial: string;
+  editable: boolean;
+  onCommitted: (title: string) => void;
+}) {
   const [title, setTitle] = useState(initial);
   const [committed, setCommitted] = useState(initial);
   const [busy, setBusy] = useState(false);
@@ -448,6 +462,7 @@ function TitleField({ docId, initial, editable }: { docId: string; initial: stri
       if (!res.ok) throw new Error(body?.error?.message ?? "Could not rename");
       setCommitted(body.document.title);
       setTitle(body.document.title);
+      onCommitted(body.document.title);
     } catch (e) {
       toast.error(e instanceof Error ? e.message : "Could not rename");
       setTitle(committed);
